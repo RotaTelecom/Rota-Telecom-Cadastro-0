@@ -220,28 +220,29 @@
     <h1>Ficha de Cadastro</h1>
   </header>
   <p class="intro">Preencha os dados abaixo e envie via WhatsApp para darmos continuidade com seu pedido de internet fibra óptica!</p>
-
+  
   <form id="fichaForm">
     <div class="grupo">
       <h2>👤 Dados Pessoais</h2>
       <label for="nome">Nome completo:</label>
       <input type="text" id="nome" required style="text-transform: uppercase;">
-
+      
       <label for="cpf">CPF:</label>
       <input type="text" id="cpf" required maxlength="14" placeholder="000.000.000-00" oninput="atualizarFeedbackCPF(this)">
       <small id="feedbackCPF" class="feedback sucesso">Digite seu CPF (11 dígitos)</small>
-
+      
       <label for="nascimento">Data de nascimento:</label>
-      <input type="date" id="nascimento" required onchange="verificarIdade(this)">
-
+      <input type="text" id="nascimento" maxlength="10" placeholder="DD/MM/AAAA" required oninput="formatarData(this)">
+      <small id="feedbackNascimento" class="feedback"></small>
+      
       <label for="email">E-mail:</label>
       <input type="email" id="email" required onblur="validarEmail(this)">
       <small id="feedbackEmail" class="feedback"></small>
-
+      
       <label for="contato1">Número para contato 1:</label>
       <input type="tel" id="contato1" required maxlength="15" placeholder="(85) 9xxxx-xxxx" oninput="atualizarFeedbackTelefone(this, 'feedbackContato1')">
       <small id="feedbackContato1" class="feedback sucesso">Formato válido</small>
-
+      
       <label for="contato2">Número para contato 2:</label>
       <input type="tel" id="contato2" maxlength="15" placeholder="(85) 9xxxx-xxxx (opcional)" oninput="atualizarFeedbackTelefone(this, 'feedbackContato2')">
       <small id="feedbackContato2" class="feedback sucesso">Formato válido (opcional)</small>
@@ -252,13 +253,13 @@
       <label for="cep">CEP:</label>
       <input type="text" id="cep" maxlength="9" placeholder="00000-000 (opcional)">
       <small id="feedbackCEP" class="feedback sucesso">Opcional</small>
-
+      
       <label for="endereco">Endereço Completo:</label>
-      <input type="text" id="endereco" required placeholder="Rua, número, complemento, bairro, cidade - UF" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-
+      <input type="text" id="endereco" required placeholder="Rua, número, complemento, bairro, cidade - UF" oninput="this.value = this.value.toUpperCase();">
+      
       <label for="referencia">Ponto de Referência:</label>
       <input type="text" id="referencia" placeholder="Ex: Em frente à padaria X, próximo ao posto Y (opcional)" style="text-transform: uppercase;">
-
+      
       <div class="observacao-endereco">
         Preencha o endereço completo (rua, número, bloco, lote, quadra, apartamento, etc.).<br>
         O ponto de referência ajuda bastante na localização da equipe técnica!
@@ -277,7 +278,7 @@
         <option value="600mb R$124,99">600 MB - R$ 124,99/mês</option>
         <option value="700mb R$134,99">700 MB - R$ 134,99/mês</option>
       </select>
-
+      
       <div id="grupoStreaming">
         <h3>🎥 Lista de Streaming (Cortesia Exclusiva)</h3>
         <p>Disponível gratuitamente para planos de 400 MB ou superiores.<br>Escolha o tipo de lista desejada:</p>
@@ -312,7 +313,6 @@
       <h2>📶 Configuração do Wi-Fi</h2>
       <label for="rede">Nome da rede Wi-Fi:</label>
       <input type="text" id="rede" required placeholder="Ex: ROTA_Fibra_123" maxlength="25">
-
       <label for="senha">Senha da rede Wi-Fi:</label>
       <input type="text" id="senha" required minlength="8" maxlength="63" placeholder="Mínimo 8 caracteres" oninput="atualizarFeedbackSenha(this)">
       <small id="feedbackSenha" class="feedback sucesso">0 / 8 caracteres mínimos</small>
@@ -334,7 +334,7 @@
     </a>
   </div>
 
-  <!-- Modal atualizado -->
+  <!-- Modal -->
   <div id="modalContrato" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -418,71 +418,94 @@
       document.getElementById('modalContrato').style.display = 'none';
     }
 
-    // ====================== NOVAS FUNCIONALIDADES ======================
+    // ====================== DATA DE NASCIMENTO ======================
+    function formatarData(input) {
+      let valor = input.value.replace(/\D/g, '');
+      if (valor.length > 2) valor = valor.substring(0,2) + '/' + valor.substring(2);
+      if (valor.length > 5) valor = valor.substring(0,5) + '/' + valor.substring(5,9);
+      input.value = valor.substring(0, 10);
 
-    // Nome completo em maiúsculo
+      const feedback = document.getElementById('feedbackNascimento');
+      if (valor.length === 0) {
+        feedback.textContent = '';
+        input.style.borderColor = '';
+      } else if (valor.length < 10) {
+        feedback.textContent = 'Digite no formato DD/MM/AAAA';
+        feedback.className = 'feedback erro';
+        input.style.borderColor = '#ff6b6b';
+      } else {
+        if (validarDataNascimento(valor)) {
+          verificarIdadePorTexto(valor);
+        } else {
+          feedback.textContent = 'Data inválida (ex: 15/05/1995)';
+          feedback.className = 'feedback erro';
+          input.style.borderColor = '#ff6b6b';
+        }
+      }
+    }
+
+    function validarDataNascimento(dataStr) {
+      const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      if (!regex.test(dataStr)) return false;
+      const [dia, mes, ano] = dataStr.split('/').map(Number);
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return false;
+      if ([4,6,9,11].includes(mes) && dia > 30) return false;
+      if (mes === 2 && dia > 29) return false;
+      return true;
+    }
+
+    function verificarIdadePorTexto(dataStr) {
+      const feedback = document.getElementById('feedbackNascimento');
+      const [dia, mes, ano] = dataStr.split('/').map(Number);
+      const hoje = new Date();
+      const nascimento = new Date(ano, mes - 1, dia);
+      
+      let idade = hoje.getFullYear() - nascimento.getFullYear();
+      const mesAtual = hoje.getMonth() - nascimento.getMonth();
+      if (mesAtual < 0 || (mesAtual === 0 && hoje.getDate() < nascimento.getDate())) idade--;
+
+      if (idade < 18) {
+        feedback.textContent = '⚠️ É necessário ter 18 anos ou mais';
+        feedback.className = 'feedback erro';
+        document.getElementById('nascimento').style.borderColor = '#ff6b6b';
+        alert("⚠️ Atenção: Para realizar o pedido é necessário ter 18 anos ou mais.");
+        document.getElementById('nascimento').value = '';
+        return false;
+      } else {
+        feedback.textContent = `✓ ${idade} anos - Válido`;
+        feedback.className = 'feedback sucesso';
+        document.getElementById('nascimento').style.borderColor = '#4ae88a';
+        return true;
+      }
+    }
+
+    // ====================== OUTRAS FUNÇÕES ======================
+    // Nome em maiúsculo
     document.getElementById('nome').addEventListener('input', function() {
       this.value = this.value.toUpperCase();
     });
 
-    // Verificar idade mínima
-    function verificarIdade(input) {
-      if (!input.value) return;
-      const hoje = new Date();
-      const nascimento = new Date(input.value);
-      let idade = hoje.getFullYear() - nascimento.getFullYear();
-      const mes = hoje.getMonth() - nascimento.getMonth();
-      if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) idade--;
-      if (idade < 18) {
-        alert("⚠️ Atenção: Para realizar o pedido é necessário ter 18 anos ou mais.");
-        input.value = '';
-        input.focus();
-      }
-    }
-
-    // Validação de e-mail
-    function validarEmail(input) {
-      const feedback = document.getElementById('feedbackEmail');
-      const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (input.value.trim() === '') {
-        feedback.textContent = '';
-        return;
-      }
-      if (regex.test(input.value)) {
-        feedback.textContent = '✓ E-mail válido';
-        feedback.className = 'feedback sucesso';
-        input.style.borderColor = '#4ae88a';
-      } else {
-        feedback.textContent = '✗ E-mail inválido (ex: nome@exemplo.com)';
-        feedback.className = 'feedback erro';
-        input.style.borderColor = '#ff6b6b';
-      }
-    }
-
-    // Ponto de Referência em maiúsculo
+    // Referência em maiúsculo
     document.getElementById('referencia').addEventListener('input', function() {
       this.value = this.value.toUpperCase();
     });
 
-    // Endereço Completo - apenas números
+    // Endereço Completo em maiúsculo
     document.getElementById('endereco').addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '');
+      this.value = this.value.toUpperCase();
     });
 
-    // ====================== FUNÇÕES ORIGINAIS ======================
     function isCPFValido(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length !== 11) return false;
       if (/^(\d)\1{10}$/.test(cpf)) return false;
       let soma = 0;
       for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
-      let resto = (soma * 10) % 11;
-      if (resto === 10 || resto === 11) resto = 0;
+      let resto = (soma * 10) % 11; if (resto === 10 || resto === 11) resto = 0;
       if (resto !== parseInt(cpf.charAt(9))) return false;
       soma = 0;
       for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
-      resto = (soma * 10) % 11;
-      if (resto === 10 || resto === 11) resto = 0;
+      resto = (soma * 10) % 11; if (resto === 10 || resto === 11) resto = 0;
       if (resto !== parseInt(cpf.charAt(10))) return false;
       return true;
     }
@@ -494,6 +517,7 @@
       else if (valor.length > 6) valorFormatado = valor.substring(0,3) + '.' + valor.substring(3,6) + '.' + valor.substring(6);
       else if (valor.length > 3) valorFormatado = valor.substring(0,3) + '.' + valor.substring(3);
       input.value = valorFormatado;
+
       const feedback = document.getElementById('feedbackCPF');
       const length = valor.length;
       if (length === 0) {
@@ -554,6 +578,25 @@
       }
     }
 
+    function validarEmail(input) {
+      const feedback = document.getElementById('feedbackEmail');
+      const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (input.value.trim() === '') { 
+        feedback.textContent = ''; 
+        return; 
+      }
+      if (regex.test(input.value)) {
+        feedback.textContent = '✓ E-mail válido';
+        feedback.className = 'feedback sucesso';
+        input.style.borderColor = '#4ae88a';
+      } else {
+        feedback.textContent = '✗ E-mail inválido (ex: nome@exemplo.com)';
+        feedback.className = 'feedback erro';
+        input.style.borderColor = '#ff6b6b';
+      }
+    }
+
+    // CEP
     document.getElementById('cep').addEventListener('input', function(e) {
       let valor = e.target.value.replace(/\D/g, '').substring(0, 8);
       if (valor.length > 5) valor = valor.substring(0,5) + '-' + valor.substring(5);
@@ -564,6 +607,7 @@
       else feedback.textContent = 'Formato: 00000-000';
     });
 
+    // Streaming
     document.getElementById('megas').addEventListener('change', function() {
       const valorPlano = this.value;
       const grupoStreaming = document.getElementById('grupoStreaming');
@@ -579,13 +623,14 @@
       }
     });
 
+    // ====================== ENVIO ======================
     function confirmarEnvio() {
       const camposObrigatorios = [
         { id: 'nome', nome: 'Nome completo' },
         { id: 'nascimento', nome: 'Data de nascimento' },
         { id: 'email', nome: 'E-mail' },
         { id: 'contato1', nome: 'Número para contato 1' },
-        { id: 'endereco', nome: 'ENDEREÇO COMPLETO' },
+        { id: 'endereco', nome: 'Endereço Completo' },
         { id: 'megas', nome: 'Plano / MEGAS contratados' },
         { id: 'vencimento', nome: 'Data de vencimento do carnê' },
         { id: 'rede', nome: 'Nome da rede Wi-Fi' }
@@ -610,7 +655,6 @@
         }
       }
 
-      // Validação de e-mail
       const emailInput = document.getElementById('email');
       const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!regexEmail.test(emailInput.value)) {
@@ -619,17 +663,14 @@
         return;
       }
 
-      // Validação CPF
       const cpfInput = document.getElementById('cpf');
       const cpfValor = cpfInput.value.replace(/\D/g, '');
       if (cpfValor.length !== 11 || !isCPFValido(cpfValor)) {
-        alert('CPF inválido! Deve conter exatamente 11 dígitos numéricos válidos.\nExemplo: 123.456.789-09');
+        alert('CPF inválido! Deve conter exatamente 11 dígitos numéricos válidos.');
         cpfInput.focus();
-        cpfInput.style.borderColor = '#ff6b6b';
         return;
       }
 
-      // Validação senha Wi-Fi
       const senhaValor = document.getElementById('senha').value.trim();
       if (senhaValor.length < 8) {
         alert('A senha do Wi-Fi deve ter no mínimo 8 caracteres.');
@@ -637,11 +678,10 @@
         return;
       }
 
-      // Validação streaming
       const grupoStreaming = document.getElementById('grupoStreaming');
       const listaStreamingEl = document.getElementById('listaStreaming');
       if (grupoStreaming.style.display === 'block' && !listaStreamingEl.value) {
-        alert('Por favor, selecione o tipo de Lista de Streaming (cortesia disponível para o plano escolhido).');
+        alert('Por favor, selecione o tipo de Lista de Streaming.');
         listaStreamingEl.focus();
         return;
       }
@@ -680,11 +720,6 @@
       const senha = document.getElementById("senha").value.trim() || "—";
       const listaStreaming = document.getElementById("listaStreaming").value.trim() || "—";
       const leuTexto = leuContrato ? "SIM" : "NÃO";
-
-      if (nascimento !== "—") {
-        const [ano, mes, dia] = nascimento.split("-");
-        nascimento = `${dia}/${mes}/${ano}`;
-      }
 
       let msg = "*NOVO CADASTRO - ROTA TELECOM*\n\n";
       msg += "*Dados Pessoais*\n";
